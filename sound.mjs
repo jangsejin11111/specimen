@@ -124,6 +124,16 @@ export class SpecimenAudio {
     this.tone(173, .43, .027, 'sine', .018);
     this.noise(.065, .035, 520);
   }
+  unpin() {
+    // Fine metal tension and a dry body scrape, not a fleshy sound.
+    this.noise(.65, .035, 2300);
+    this.tone(1860, .32, .009, 'sine');
+    this.tone(1937, .40, .007, 'sine', .09);
+  }
+  scuttle() {
+    this.noise(.045, .022, 1700);
+    this.tone(850, .012, .006, 'triangle', .026);
+  }
   endingAmbience() {
     const ctx = this.context; if (!ctx || ctx.state !== 'running') return;
     const now = ctx.currentTime, duration = 2.8;

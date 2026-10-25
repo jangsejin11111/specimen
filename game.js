@@ -1,11 +1,11 @@
 import { isCleared, gazeDirection, EXPRESSIONS } from './clear-state.mjs?v=smile1';
 import { mineReactionPhase } from './mine-reaction.mjs?v=wait1';
-import { EndingSequence, endingPosition, restoreEndingFaces, endingRoute, heldBlink } from './ending.mjs?v=hidden1';
+import { EndingSequence, endingPosition, restoreEndingFaces, endingRoute, heldBlink } from './ending.mjs?v=slow2';
 import { SIZE, BUG_COUNT } from './config.mjs?v=tray1';
 import { SpecimenState } from './game-state.mjs?v=dart1';
 import { advanceBugs } from './motion.mjs?v=speed1';
 import { PIN_TIMING } from './pinning.mjs?v=tray1';
-import { SpecimenAudio } from './sound.mjs?v=open1';
+import { SpecimenAudio } from './sound.mjs?v=escape2';
 import { followHeld, captureScale, livingTwitch } from './capture-feel.mjs?v=tray1';
 import { makeBugArt } from './bug-art.mjs?v=tray1';
 import { CollectiveGaze } from './collective-gaze.mjs?v=surround1';
@@ -252,6 +252,11 @@ function showCompletion(label, withCountdown=false) {
   if(completion.open)return;
   if(mineReaction) sound.playCue(() => sound.endingAmbience());
   completion.querySelector('p').textContent=`${ending.count(state)} / ${BUG_COUNT}`;
+  if(ending.phase==='complete' && !mineReaction) {
+    const count=completion.querySelector('p'), numerator=document.createElement('strong');
+    numerator.className='ending-numerator';numerator.textContent=String(BUG_COUNT);
+    count.replaceChildren(numerator,document.createTextNode(` / ${BUG_COUNT}`));
+  }
   completion.setAttribute('aria-label',label);completion.showModal();
   document.getElementById('completion-restart').focus();
 }
@@ -298,18 +303,21 @@ function renderEnding() {
     return;
   }
   if(!escapeView) {
+    const originalWidth=getComputedStyle(node).width, originalHeight=getComputedStyle(node).height;
     const r=node.getBoundingClientRect(),paper=board.children[ending.index].querySelector('.paper').getBoundingClientRect();
     const start={x:r.left+r.width/2,y:r.top+r.height/2};
     const label={x:paper.left+paper.width/2,y:paper.bottom+3};
     const route=endingRoute(label,board.getBoundingClientRect(),innerWidth,r.width);
-    escapeView={start,label,exit:route.at(-1),route,nextGazeAt:0};
+    escapeView={start,label,exit:route.at(-1),route,nextGazeAt:0,nextFootstepAt:0};
+    sound.playCue(() => sound.unpin());
     // Do not remove the specimen record: all eight classifications remain complete.
     state.pinnedSpecimens.get(ending.index).bodyDeparted=true;
     ending.bug.mode='endingEscape';
-    document.body.append(node);node.style.width=`${r.width}px`;node.style.position='fixed';node.style.zIndex='20';
+    document.body.append(node);node.style.width=originalWidth;node.style.height=originalHeight;node.style.position='fixed';node.style.zIndex='20';
     board.children[ending.index].setAttribute('aria-label',state.labels[ending.index].name+', 핀과 빈 자리');
   }
   if(phase==='empty'||phase==='complete') {
+    if(!node.hidden)sound.stop();
     lightAt(null);node.hidden=true;node.style.display='none';ending.bug.mode='departed';
     restoreEndingFaces(gazes.faces,phase==='complete'?.15:t);
     if(phase==='complete')showCompletion('게임 완료');
@@ -321,6 +329,9 @@ function renderEnding() {
   node.className='bug escaping';node.style.left=`${pos.x}px`;node.style.top=`${pos.y}px`;
   node.style.transform=`translate(-50%,-50%) rotate(${angle}deg)`;lightAt(pos);
   const now=performance.now();
+  if((phase==='label'||phase==='escape') && now>=escapeView.nextFootstepAt) {
+    sound.scuttle();escapeView.nextFootstepAt=now+230+Math.random()*180;
+  }
   if(now>=escapeView.nextGazeAt){aimEndingFaces(pos);escapeView.nextGazeAt=now+100;}
 }
 

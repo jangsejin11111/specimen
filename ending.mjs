@@ -1,5 +1,5 @@
 // A separate, one-shot presentation timeline. Gameplay data is not reinterpreted.
-export const ENDING_PHASES=[['smile',2],['countdown',8],['fade',.25],['still',.75],['dim',.4],['twitch',1.5],['release',.5],['label',.7],['escape',2.7],['empty',1.65]];
+export const ENDING_PHASES=[['smile',2],['countdown',8],['fade',.25],['still',.75],['dim',.4],['twitch',1.5],['release',.9],['label',1.0],['escape',5.2],['empty',1.65]];
 export class EndingSequence {
   constructor(total) { this.total=total; this.reset(); }
   reset() { this.phase='playing'; this.elapsed=0; this.index=null; this.bug=null; this.classificationRecord=null; }
@@ -27,9 +27,9 @@ export function heldBlink(elapsedMs) { return elapsedMs>=3000 && elapsedMs%3000<
 export function endingPosition(phase,t,start,label,exit,route=null) {
   const mix=(a,b,f)=>({x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f});
   const freed={x:start.x+8,y:start.y+10};
-  if(phase==='release') return mix(start,freed,Math.min(1,t/.5));
-  if(phase==='label') return mix(freed,label,Math.min(1,t/.7));
-  if(phase==='escape') return routePosition(route||[label,exit],Math.min(1,t/2.7));
+  if(phase==='release') return mix(start,freed,Math.min(1,t/.9));
+  if(phase==='label') return mix(freed,label,Math.min(1,t/1.0));
+  if(phase==='escape') return routePosition(route||[label,exit],Math.min(1,t/5.2));
   return start;
 }
 
@@ -52,7 +52,8 @@ export function endingRoute(label,board,viewportWidth,bugWidth) {
   const y1=Math.max(board.top+board.height*.18,Math.min(board.top+board.height*.82,label.y));
   const x2=board.left+board.width*(left?.12:.88);
   const y2=board.top+board.height*(y1>board.top+board.height/2?.20:.80);
-  return [label,{x:x1,y:y1},{x:x2,y:y2},{x:left?-bugWidth:viewportWidth+bugWidth,y:y2+board.height*.04}];
+  const bend={x:board.left+board.width*(left?.55:.45),y:board.top+board.height*(y2>board.top+board.height/2?.65:.35)};
+  return [label,{x:x1,y:y1},bend,{x:x2,y:y2},{x:left?-bugWidth:viewportWidth+bugWidth,y:y2+board.height*.04}];
 }
 export function routePosition(points,t) {
   const lengths=points.slice(1).map((p,i)=>Math.hypot(p.x-points[i].x,p.y-points[i].y));

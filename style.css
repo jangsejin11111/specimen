@@ -177,3 +177,5 @@ body:has(#completion[open]) .window > header{visibility:hidden;pointer-events:no
 .ending-running .bug.waking-subtle .l1{animation:leg-settle 140ms alternate infinite!important}
 .ending-running .bug.waking .leg{animation:leg-settle 90ms var(--delay) alternate infinite!important}
 .ending-running .bug.escaping .leg{animation:leg-settle 95ms var(--delay) alternate infinite!important}
+
+#completion .ending-numerator{font-weight:700;filter:blur(.65px)}
