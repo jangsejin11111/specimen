@@ -1,10 +1,46 @@
 // Quiet, dry Web Audio cues, unlocked by direct user gestures.
 export class SpecimenAudio {
   constructor(factory = () => { const C = globalThis.AudioContext || globalThis.webkitAudioContext; return C ? new C() : null; }) { this.factory = factory; this.context = null; this.active = new Set(); }
+  // iOS can render Web Audio while its ambient output is still muted. A real,
+  // unmuted media element establishes the playback route on a user gesture.
+  primeMediaRoute() {
+    if (!globalThis.document || !/iPhone|iPad|iPod/.test(navigator.userAgent) && !(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return;
+    if (!this.mediaRoute) {
+      const rate = 8000, samples = rate, bytes = new Uint8Array(44 + samples * 2), view = new DataView(bytes.buffer);
+      const text = (offset, value) => { for (let i = 0; i < value.length; i++) bytes[offset + i] = value.charCodeAt(i); };
+      text(0, 'RIFF'); view.setUint32(4, bytes.length - 8, true); text(8, 'WAVE'); text(12, 'fmt ');
+      view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+      view.setUint32(24, rate, true); view.setUint32(28, rate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+      text(36, 'data'); view.setUint32(40, samples * 2, true);
+      // Non-zero at -90dB: inaudible, but not a muted media element.
+      for (let i = 0; i < samples; i++) view.setInt16(44 + i * 2, i % 2 ? 1 : -1, true);
+      const audio = document.createElement('audio');
+      audio.src = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
+      audio.loop = true; audio.preload = 'auto'; audio.setAttribute('playsinline', '');
+      audio.setAttribute('aria-hidden', 'true'); audio.hidden = true;
+      document.body.append(audio); this.mediaRoute = audio;
+    }
+    if (this.mediaRoute.paused) {
+      const playing = this.mediaRoute.play();
+      playing?.catch(() => {}); // Next touch retries; never mark a rejection as unlocked.
+    }
+  }
+  pauseForBackground() {
+    this.mediaRoute?.pause();
+    this.refreshRoute = true;
+    this.stop();
+  }
   async unlock() {
     try {
       // Request the media playback route where supported (not ambient audio).
-      try { if (globalThis.navigator?.audioSession) globalThis.navigator.audioSession.type = 'playback'; } catch {}
+      try {
+        if (globalThis.navigator?.audioSession) {
+          if (this.refreshRoute) globalThis.navigator.audioSession.type = 'auto';
+          globalThis.navigator.audioSession.type = 'playback';
+        }
+      } catch {}
+      this.refreshRoute = false;
+      this.primeMediaRoute();
       if (!this.context || this.context.state === 'closed') this.context = this.factory();
       const ctx = this.context;
       if (!ctx || ctx.state === 'running') return;
