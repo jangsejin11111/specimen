@@ -5,7 +5,7 @@ import { SIZE, BUG_COUNT } from './config.mjs?v=tray1';
 import { SpecimenState } from './game-state.mjs?v=dart1';
 import { advanceBugs } from './motion.mjs?v=speed1';
 import { PIN_TIMING } from './pinning.mjs?v=tray1';
-import { SpecimenAudio } from './sound.mjs?v=ambient1';
+import { SpecimenAudio } from './sound.mjs?v=open1';
 import { followHeld, captureScale, livingTwitch } from './capture-feel.mjs?v=tray1';
 import { makeBugArt } from './bug-art.mjs?v=tray1';
 import { CollectiveGaze } from './collective-gaze.mjs?v=surround1';
@@ -89,6 +89,7 @@ function choose(index) {
   const result = state.open(index); if (!result) return;
   for(const cell of result.openedIndices)drawCell(cell);
   if(result.type==='mine')startMineReaction(index);
+  else sound.playCue(() => sound.openSafe(result.openedIndices.length));
 
 }
 let hoverTarget = null, capturedNode = null;
@@ -234,7 +235,7 @@ function startMineReaction(index) {
     faces.push(...board.children[y*SIZE+x].querySelectorAll('.face'));
   }
   mineReaction={started:performance.now(),faces,immediate:state.openedCells.size===1};
-  sound.stop();board.inert=true;document.getElementById('restart').disabled=true;
+  sound.stop();sound.playCue(() => sound.openMine());board.inert=true;document.getElementById('restart').disabled=true;
   document.body.classList.add('game-stopped');renderMineReaction(performance.now());
 }
 function renderMineReaction(now) {
@@ -249,7 +250,7 @@ function showCompletion(label, withCountdown=false) {
   countdownText.hidden=!withCountdown;
   if(withCountdown)countdownText.textContent=String(ending.countdown??8);
   if(completion.open)return;
-  if(mineReaction) sound.endingAmbience();
+  if(mineReaction) sound.playCue(() => sound.endingAmbience());
   completion.querySelector('p').textContent=`${ending.count(state)} / ${BUG_COUNT}`;
   completion.setAttribute('aria-label',label);completion.showModal();
   document.getElementById('completion-restart').focus();

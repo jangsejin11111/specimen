@@ -59,9 +59,9 @@ export class SpecimenAudio {
     this.active.add(source);
     source.onended = () => { this.active.delete(source); source.disconnect(); };
   }
-  tone(frequency, duration, volume, type = 'sine') {
+  tone(frequency, duration, volume, type = 'sine', delay = 0) {
     const ctx = this.context; if (!ctx || ctx.state !== 'running') return;
-    const source = ctx.createOscillator(), gain = ctx.createGain(), now = ctx.currentTime;
+    const source = ctx.createOscillator(), gain = ctx.createGain(), now = ctx.currentTime + delay;
     source.type = type; source.frequency.setValueAtTime(frequency, now);
     gain.gain.setValueAtTime(.0001, now); gain.gain.exponentialRampToValueAtTime(volume, now + .003); gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
     source.connect(gain); gain.connect(ctx.destination); this.track(source);
@@ -103,6 +103,27 @@ export class SpecimenAudio {
     source.start(); source.stop(ctx.currentTime + duration + .01);
     this.tone(95, .035, .025, 'triangle');
   }
+  playCue(callback) {
+    const generation = this.generation || 0;
+    if (this.context?.state === 'running') { callback(); return; }
+    void this.unlock().then(() => {
+      if ((this.generation || 0) === generation && this.context?.state === 'running') callback();
+    });
+  }
+  openSafe(count = 1) {
+    // Only a few quiet ticks for a flood, never one loud cue per cell.
+    const ticks = count > 1 ? Math.min(4, 1 + Math.ceil(Math.log2(count))) : 1;
+    for (let i = 0; i < ticks; i++) {
+      this.tone(2350 + i * 137, .018, .026 / (1 + i * .5), 'triangle', i * .043);
+      this.tone(3700 + i * 91, .011, .009 / (1 + i), 'sine', i * .043);
+    }
+  }
+  openMine() {
+    // A dull opening into a hollow space, with no explosion or alarm.
+    this.tone(108, .10, .085, 'sine');
+    this.tone(173, .43, .027, 'sine', .018);
+    this.noise(.065, .035, 520);
+  }
   endingAmbience() {
     const ctx = this.context; if (!ctx || ctx.state !== 'running') return;
     const now = ctx.currentTime, duration = 2.8;
@@ -128,5 +149,5 @@ export class SpecimenAudio {
     air.start(now); air.stop(now + duration);
   }
   tap() { this.tone(3400, .012, .018); this.tone(210, .028, .045); this.noise(.018, .035, 1100); }
-  stop() { for (const source of this.active) { try { source.stop(); } catch {} } this.active.clear(); }
+  stop() { this.generation = (this.generation || 0) + 1; for (const source of this.active) { try { source.stop(); } catch {} } this.active.clear(); }
 }
