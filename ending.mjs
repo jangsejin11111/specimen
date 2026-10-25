@@ -22,7 +22,7 @@ export class EndingSequence {
     if(this.elapsed>=ENDING_PHASES[i][1]) { this.elapsed=0; this.phase=ENDING_PHASES[i+1]?.[0]||'complete'; }
   }
 }
-export function heldBlink(elapsedMs) { return elapsedMs>=3000 && elapsedMs%3000<140; }
+export function heldBlink(elapsedMs) { return elapsedMs>=2500 && elapsedMs%2500<140; }
 
 export function endingPosition(phase,t,start,label,exit,route=null) {
   const mix=(a,b,f)=>({x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f});

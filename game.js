@@ -1,6 +1,6 @@
 import { isCleared, gazeDirection, EXPRESSIONS } from './clear-state.mjs?v=smile1';
 import { mineReactionPhase } from './mine-reaction.mjs?v=wait1';
-import { EndingSequence, endingPosition, restoreEndingFaces, endingRoute, heldBlink } from './ending.mjs?v=count5';
+import { EndingSequence, endingPosition, restoreEndingFaces, endingRoute, heldBlink } from './ending.mjs?v=blink25';
 import { SIZE, BUG_COUNT } from './config.mjs?v=tray1';
 import { SpecimenState } from './game-state.mjs?v=dart1';
 import { advanceBugs } from './motion.mjs?v=speed1';
