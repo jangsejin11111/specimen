@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Study</title><meta name="description" content="학명 라벨, 힐끔거리는 얼굴, 움직이는 곤충이 놓인 격자.">
+<link rel="icon" type="image/svg+xml" href="beetle.svg"><link rel="stylesheet" href="style.css?v=header1">
+</head>
+<body><main><section class="window" aria-label="곤충 관찰 게임">
+<header><span id="progress" aria-live="polite">0 / 8</span><button id="restart" type="button">restart</button></header>
+<div class="board-scroll"><div class="board-frame"><div id="board" class="board" role="group" aria-label="8행 8열 표본 라벨"></div><div id="insects" class="insects" aria-hidden="true"></div></div></div>
+</section></main><div id="ending-light" aria-hidden="true"></div><dialog id="completion" aria-label="8 / 8"><p>8 / 8</p><button id="completion-restart" type="button">restart</button></dialog><script type="module" src="game.js?v=speed1"></script></body></html>

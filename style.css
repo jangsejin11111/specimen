@@ -1,0 +1,157 @@
+:root{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;color:#45484b;background:#fff;font-synthesis:none}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#fff}
+main{width:min(100% - 48px,740px);margin:64px auto 80px}
+.window{padding:0;border:0;background:transparent;box-shadow:none}
+header{display:flex;align-items:center;gap:16px;margin:0 0 24px}
+h1{margin:0;font-size:12px;font-weight:400;letter-spacing:1.5px;color:#5b5e61}
+button{font:inherit;color:inherit}
+header button{margin-left:auto;padding:6px 11px;font-size:11px;font-weight:400;background:#fff;border:1px solid #dedfe1;border-radius:2px;cursor:pointer}
+header button:hover{background:#fafafa;border-color:#c5c7c9}
+button:focus-visible{outline:1px solid #73777c;outline-offset:-3px}
+.board-scroll{overflow:auto}
+.board-frame{position:relative;min-width:528px;border:1px solid #e0e2e4;background:#fff}
+.board{display:grid;grid-template-columns:repeat(var(--size,8),minmax(0,1fr));user-select:none;touch-action:manipulation}
+.cell{position:relative;aspect-ratio:1;width:100%;border:0;border-right:1px solid #e5e7e8;border-bottom:1px solid #e5e7e8;border-radius:0;padding:0;background:#fafbfb;touch-action:manipulation}
+.cell:nth-child(8n){border-right:0}
+.cell:nth-last-child(-n+8){border-bottom:0}
+.cell:not(.opened):hover{background:#f6f7f7}
+.cell.opened{background:#fff}
+.paper{position:absolute;left:8%;bottom:10%;width:84%;padding:4px 0 3px;font:normal 9px/1.15 Georgia,serif;color:#616569;white-space:nowrap;background:#fff;border:1px solid #eceeef;pointer-events:none;transition:transform .12s,border-color .12s}
+.specimen-complete .paper{color:#292d30;font-weight:600;border-color:#d9dcde}
+.faces{position:absolute;inset:5%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;align-content:center;justify-items:center;pointer-events:none}
+.faces[data-density="single"]{grid-template-columns:1fr}
+.faces[data-density="medium"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+.face{position:relative;display:flex;align-items:flex-start;justify-content:center;gap:8%;width:100%;max-width:23px;aspect-ratio:1;background:transparent;border:1px solid #969b9f;border-radius:50%;pointer-events:none}
+.faces[data-density="single"] .face{max-width:29px}
+.faces[data-density="medium"] .face{max-width:26px}
+.eye{position:relative;top:25%;width:28%;height:29%;background:#fff;border:1px solid #d0d3d5;border-radius:50%}
+.pupil{position:absolute;width:42%;height:56%;background:#292d30;border-radius:50%;left:29%;top:22%;transform:translate(var(--dx),var(--dy))}
+.mouth{position:absolute;left:39%;top:75%;width:23%;height:1px;background:#969b9f}
+.insects{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
+.bug{position:absolute;width:3.6%;height:auto;aspect-ratio:4/5;display:block;overflow:visible;will-change:transform;pointer-events:none}
+.bug svg{display:block;width:100%;height:100%;overflow:visible;pointer-events:none}
+.bug svg ellipse{fill:#202224}
+.bug svg g{stroke:#202224}
+.bug.roaming{pointer-events:auto;cursor:url('tweezers.svg?v=free1') 3 25,default;touch-action:none;user-select:none;-webkit-user-drag:none}
+.bug.roaming:hover{filter:drop-shadow(0 1px 1px #00000025);cursor:url('tweezers-closed.svg?v=free1') 3 25,default}
+.bug.grabbed{pointer-events:auto;z-index:10;cursor:url('tweezers-closed.svg?v=free1') 3 25,default;touch-action:none;filter:drop-shadow(1px 3px 2px #00000030)}
+.bug.pinned{pointer-events:none}
+.insects.gripping{overflow:visible;cursor:url('tweezers-closed.svg?v=free1') 3 25,default}
+.board-frame,.board,.board .cell,.bug.pinned{cursor:default}
+/* Both cursor SVGs meet the object at the tip (5,27). */
+.board.gripping,.board.gripping .cell,body:has(.bug.grabbed),body:has(.bug.grabbed) *{cursor:url('tweezers-closed.svg?v=free1') 3 25,default!important}
+.specimen-pin{position:absolute;left:calc(50% - .5px);top:7%;width:1px;height:56%;background:#45494c;z-index:5;pointer-events:none;opacity:0;will-change:transform}
+.specimen-pin:before{content:"";position:absolute;left:-2px;top:-3px;width:5px;height:5px;background:#c93032;border-radius:50%}
+.leg{transform-box:view-box}
+.l1{transform-origin:11px 17px;--beat:83ms;--delay:-27ms}
+.l2{transform-origin:10px 23px;--beat:117ms;--delay:-83ms}
+.l3{transform-origin:11px 29px;--beat:97ms;--delay:-42ms}
+.r1{transform-origin:21px 17px;--beat:103ms;--delay:-71ms}
+.r2{transform-origin:22px 23px;--beat:79ms;--delay:-13ms}
+.r3{transform-origin:21px 29px;--beat:131ms;--delay:-101ms}
+.bug.grabbed .leg{animation:leg-struggle var(--beat) var(--delay) infinite alternate ease-in-out}
+.bug.settling .leg{animation:leg-settle 170ms var(--delay) infinite alternate ease-in-out}
+@keyframes leg-struggle{0%{transform:rotate(-22deg)}37%{transform:rotate(9deg)}100%{transform:rotate(24deg)}}
+@keyframes leg-settle{from{transform:rotate(-5deg)}to{transform:rotate(6deg)}}
+@media(max-width:480px){main{width:calc(100% - 32px);margin:32px auto 48px}header{margin-bottom:20px}}
+
+/* Thin fitted covers. Decoration never responds to gaze eligibility or dragging. */
+:root,body{background:#f3f5f6}
+header button{background:#f8f9fa;border-color:#d3d9dd}
+.board-frame{border-color:#c6cfd5;background:#d8dfe3;box-shadow:0 1px 0 #ffffff80}
+.cell,.cell.opened,.cell:not(.opened):hover{border:0;background:#dce2e6;isolation:isolate}
+.cell:before{content:"";position:absolute;inset:2px;border:1px solid #c6d0d6;border-radius:1px;pointer-events:none;z-index:-1;background:linear-gradient(125deg,#ffffff50,transparent 35%),linear-gradient(#eef2f4,#e9eef1);box-shadow:inset 1px 1px 0 #ffffff70,inset -1px -1px 2px #8196a414,0 1px 1px #70859220}
+.cell:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(#b9c5cc,#cbd4da) 50% 0/9px 2px no-repeat,linear-gradient(#cbd4da,#b9c5cc) 50% 100%/9px 2px no-repeat,linear-gradient(90deg,#b9c5cc,#d1dade) 0 50%/2px 8px no-repeat,linear-gradient(90deg,#d1dade,#b9c5cc) 100% 50%/2px 8px no-repeat}
+.cell.opened:before{background:linear-gradient(125deg,#ffffff40,transparent 35%),#eef2f4}
+.paper{background:#fafbfb;border-color:#dfe4e7;color:#525c62}
+.face{border-color:#7d8a91;background:#f4f7f84d}
+.eye{background:#f9fbfb;border-color:#bac5cb}
+
+/* Completion stays quiet; the empty pin and label remain visible behind it. */
+#progress{margin-left:auto;font-size:11px;font-variant-numeric:tabular-nums;color:#69747b}
+header button{margin-left:0}
+header button:disabled{cursor:default;opacity:.65}
+#completion{padding:24px 38px;border:1px solid #292929;background:#000;color:#f2f2f2;box-shadow:0 3px 18px #293b4914;text-align:center;font-size:12px}
+#completion::backdrop{background:#f3f5f60d}
+#completion p{margin:0 0 18px;font-variant-numeric:tabular-nums}
+#completion button{padding:6px 11px;font-size:11px;background:#000;color:#f2f2f2;border:1px solid #777;border-radius:2px;cursor:pointer}
+.bug.waking-subtle .l1{animation:leg-settle 140ms alternate infinite}
+.bug.waking .leg{animation:leg-settle 90ms var(--delay) alternate infinite}
+.bug.escaping .leg{animation:leg-settle 95ms var(--delay) alternate infinite}
+.bug.escaping{pointer-events:none}
+
+/* Neutral dimming above the escaping insect, below the native dialog top layer. */
+#ending-light{position:fixed;inset:0;z-index:30;pointer-events:none;opacity:0;background:rgba(0,0,0,.36);transition:opacity 400ms linear}
+#ending-light.dimmed{opacity:1}
+#ending-light.spotlight{background:radial-gradient(circle at var(--spot-x) var(--spot-y),transparent 0%,rgba(0,0,0,.025) calc(var(--spot-radius)*.25),rgba(0,0,0,.13) calc(var(--spot-radius)*.60),rgba(0,0,0,.30) calc(var(--spot-radius)*.88),rgba(0,0,0,.36) var(--spot-radius))}
+#ending-light:not(.dimmed){transition:none}
+#completion::backdrop{background:transparent}
+#completion #countdown{font-size:18px;font-weight:400;margin:0 0 18px;color:#59636a;font-variant-numeric:tabular-nums}
+
+/* Two restrained eyelid closures; pupils retain their own tracking transform. */
+.face .eye{transform-origin:center;transition:transform 25ms linear,background-color 25ms linear}
+.face[data-blink-closed] .eye{transform:scaleY(.12);background:#7d8a91;border-color:#7d8a91}
+.face[data-blink-closed] .pupil{opacity:0}
+
+.bug.pinned.movable{pointer-events:auto;cursor:url('tweezers.svg?v=free1') 3 25,default;touch-action:none;user-select:none}
+.bug.pinned.movable:hover{filter:drop-shadow(0 1px 1px #00000025);cursor:url('tweezers-closed.svg?v=free1') 3 25,default}
+
+.revealed-mine{position:absolute;left:calc(50% - 4px);top:calc(50% - 4px);width:8px;height:8px;border-radius:50%;background:#333a3d;box-shadow:0 0 0 3px #333a3d18}
+.face[data-reaction="surprised"] .eye{transform:scale(1.2);border-color:#7d8a91}
+.face[data-reaction="surprised"] .mouth{height:5px;width:5px;left:calc(50% - 2.5px);top:69%;border:1px solid #7d8a91;border-radius:50%;background:transparent}
+.face[data-reaction="closed"] .eye{transform:scaleY(.12);background:#7d8a91;border-color:#7d8a91}
+.face[data-reaction="closed"] .pupil{opacity:0}
+.game-stopped .bug{pointer-events:none!important;cursor:default!important}
+.game-stopped .leg{animation:none!important}
+.bug.fleeing .leg{animation:leg-settle 65ms var(--delay) alternate infinite}
+
+/* Faces crowd their cell as the population increases. */
+.faces{inset:2%;gap:0;grid-template-rows:repeat(var(--face-rows,1),minmax(0,1fr));align-content:stretch;align-items:stretch}
+.faces .face{max-width:none;width:100%;height:100%;aspect-ratio:auto}
+.faces[data-density="single"] .face{max-width:none;width:50%;height:50%;align-self:center}
+.faces[data-density="medium"] .face{max-width:none}
+.face[data-reaction] .eye{transition:transform 200ms ease-out,background-color 200ms linear}
+.face[data-reaction] .pupil{transition:transform 200ms ease-out,opacity 200ms linear}
+
+.faces[data-count="2"] .face{height:auto;aspect-ratio:1;align-self:center}
+
+/* Completion changes expression only; pupils keep their last gaze. */
+.face[data-expression="smile"] .mouth{top:65%;height:19%;width:38%;left:31%;background:none;border-bottom:1.5px solid #69757b;border-radius:0 0 50% 50%}
+.face[data-expression="cry"] .mouth{top:75%;height:13%;width:32%;left:34%;background:none;border-top:1.5px solid #69757b;border-radius:50% 50% 0 0}
+.face[data-expression="cry"]::after{content:"";position:absolute;top:57%;left:24%;height:14%;width:5%;background:#89969d;border-radius:50%}
+.face[data-expression="surprise"] .mouth{top:69%;left:41%;width:18%;height:23%;border:1.5px solid #69757b;background:none;border-radius:50%}
+.face[data-expression="angry"] .mouth{top:77%;left:33%;width:34%;height:2px;background:#69757b}
+.face[data-expression="angry"]::before,.face[data-expression="angry"]::after{content:"";position:absolute;top:18%;height:1.5px;width:25%;background:#69757b}
+.face[data-expression="angry"]::before{left:18%;transform:rotate(18deg)}
+.face[data-expression="angry"]::after{right:18%;transform:rotate(-18deg)}
+
+/* Heat across the whole face, without cheek marks. */
+.face{transition:background-color 180ms ease-out,border-color 180ms ease-out}
+.face[data-reaction="surprised"],.face[data-reaction="staring"]{background:linear-gradient(180deg,#c64b46 0%,#df7368 48%,#efaa91 100%);border-color:#994b46}
+.face[data-reaction="surprised"]{animation:mine-heat 160ms ease-out both}
+.face[data-reaction="surprised"] .eye,.face[data-reaction="staring"] .eye{background:#f8dfd7;border-color:#8c514b}
+.face[data-reaction="surprised"] .mouth{border-color:#74433e}
+@keyframes mine-heat{from{background-color:#e8bdad;filter:saturate(.65)}to{filter:saturate(1)}}
+
+/* Independent translation keeps the underlying gaze direction intact. */
+.face[data-reaction="surprised"] .pupil{animation:alarm-pupil 700ms steps(1,end) infinite}
+@keyframes alarm-pupil{
+  0%,100%{translate:0 0}
+  13%{translate:.7px -.3px}
+  29%{translate:-.65px .35px}
+  43%{translate:.3px .55px}
+  61%{translate:-.7px -.25px}
+  78%{translate:.5px -.45px}
+  91%{translate:-.2px .2px}
+}
+@media(prefers-reduced-motion:reduce){.face[data-reaction="surprised"] .pupil{animation:none}}
+
+#completion button:hover{background:#222;border-color:#bcbcbc}
+#completion button:focus-visible{outline:1px solid #fff;outline-offset:3px}
+
+/* Keep each face circular, with breathing room around incomplete rows. */
+.faces:not([data-density="single"]) .face{height:auto;aspect-ratio:1;align-self:center}
+
+/* Preserve board geometry while the modal owns the controls. */
+body:has(#completion[open]) .window > header{visibility:hidden;pointer-events:none}

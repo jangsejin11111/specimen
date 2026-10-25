@@ -1,0 +1,38 @@
+// Quiet, dry Web Audio cues, created only after an explicit pin gesture.
+export class SpecimenAudio {
+  constructor(factory = () => { const C = globalThis.AudioContext || globalThis.webkitAudioContext; return C ? new C() : null; }) { this.factory = factory; this.context = null; this.active = new Set(); }
+  async unlock() {
+    try {
+      this.context ||= this.factory();
+      if (this.context?.state === 'suspended') await this.context.resume();
+    } catch { this.context = null; }
+  }
+  track(source) {
+    this.active.add(source);
+    source.onended = () => { this.active.delete(source); source.disconnect(); };
+  }
+  tone(frequency, duration, volume, type = 'sine') {
+    const ctx = this.context; if (!ctx || ctx.state !== 'running') return;
+    const source = ctx.createOscillator(), gain = ctx.createGain(), now = ctx.currentTime;
+    source.type = type; source.frequency.setValueAtTime(frequency, now);
+    gain.gain.setValueAtTime(.0001, now); gain.gain.exponentialRampToValueAtTime(volume, now + .003); gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    source.connect(gain); gain.connect(ctx.destination); this.track(source);
+    source.start(now); source.stop(now + duration + .01);
+  }
+  noise(duration, volume, frequency) {
+    const ctx = this.context; if (!ctx || ctx.state !== 'running') return;
+    const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate), data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain();
+    source.buffer = buffer; filter.type = 'bandpass'; filter.frequency.value = frequency; filter.Q.value = .8;
+    gain.gain.value = volume; source.connect(filter); filter.connect(gain); gain.connect(ctx.destination); this.track(source);
+    source.start(); source.stop(ctx.currentTime + duration + .01);
+  }
+  click() { this.tone(2700, .055, .035); this.tone(4300, .03, .016); this.noise(.022, .018, 3200); }
+  rustle() { this.noise(.12, .025, 1900); }
+  friction() { this.noise(.055, .009, 2300); }
+  reject() { this.tone(125, .095, .022, 'sawtooth'); this.noise(.045, .015, 550); }
+  land() { this.tone(170, .045, .04); this.noise(.025, .023, 700); }
+  tap() { this.tone(3400, .012, .018); this.tone(210, .028, .045); this.noise(.018, .035, 1100); }
+  stop() { for (const source of this.active) { try { source.stop(); } catch {} } this.active.clear(); }
+}
