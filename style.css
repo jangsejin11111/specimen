@@ -155,3 +155,17 @@ header button:disabled{cursor:default;opacity:.65}
 
 /* Preserve board geometry while the modal owns the controls. */
 body:has(#completion[open]) .window > header{visibility:hidden;pointer-events:none}
+
+/* Fit the complete board on narrow screens without horizontal scrolling. */
+@media (max-width: 780px), (max-height: 600px) and (pointer: coarse){
+  body{min-height:100svh;padding: max(12px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));box-sizing:border-box}
+  main{width:min(100%,calc(100svh - 96px),740px);margin:0 auto}
+  header{height:40px;margin:0 0 8px;gap:12px}
+  header button{min-height:36px;padding:8px 12px}
+  .board-frame{min-width:0;width:100%;container-type:inline-size}
+  .board-scroll{overflow:visible}
+  .paper{font-size:clamp(4px,1.2cqw,9px);padding:2px 0;left:5%;width:90%}
+  .cell:before{inset:1px}
+  #completion{max-width:calc(100vw - 32px)}
+  #completion button{min-height:40px;padding:8px 16px}
+}
