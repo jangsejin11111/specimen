@@ -5,7 +5,7 @@ import { SIZE, BUG_COUNT } from './config.mjs?v=tray1';
 import { SpecimenState } from './game-state.mjs?v=dart1';
 import { advanceBugs } from './motion.mjs?v=speed1';
 import { PIN_TIMING } from './pinning.mjs?v=tray1';
-import { SpecimenAudio } from './sound.mjs?v=scrape1';
+import { SpecimenAudio } from './sound.mjs?v=ambient1';
 import { followHeld, captureScale, livingTwitch } from './capture-feel.mjs?v=tray1';
 import { makeBugArt } from './bug-art.mjs?v=tray1';
 import { CollectiveGaze } from './collective-gaze.mjs?v=surround1';
@@ -249,6 +249,7 @@ function showCompletion(label, withCountdown=false) {
   countdownText.hidden=!withCountdown;
   if(withCountdown)countdownText.textContent=String(ending.countdown??8);
   if(completion.open)return;
+  if(mineReaction) sound.endingAmbience();
   completion.querySelector('p').textContent=`${ending.count(state)} / ${BUG_COUNT}`;
   completion.setAttribute('aria-label',label);completion.showModal();
   document.getElementById('completion-restart').focus();

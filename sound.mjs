@@ -103,6 +103,30 @@ export class SpecimenAudio {
     source.start(); source.stop(ctx.currentTime + duration + .01);
     this.tone(95, .035, .025, 'triangle');
   }
+  endingAmbience() {
+    const ctx = this.context; if (!ctx || ctx.state !== 'running') return;
+    const now = ctx.currentTime, duration = 2.8;
+    const envelope = ctx.createGain();
+    envelope.gain.setValueAtTime(.0001, now);
+    envelope.gain.exponentialRampToValueAtTime(.075, now + .18);
+    envelope.gain.exponentialRampToValueAtTime(.025, now + .95);
+    envelope.gain.exponentialRampToValueAtTime(.0001, now + duration);
+    envelope.connect(ctx.destination);
+    // A hollow, gently beating low resonance, without a tune or impact.
+    for (const frequency of [116, 119.5]) {
+      const source = ctx.createOscillator(); source.type = 'sine';
+      source.frequency.setValueAtTime(frequency, now);
+      source.connect(envelope); this.track(source);
+      source.start(now); source.stop(now + duration);
+    }
+    const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * .35;
+    const air = ctx.createBufferSource(), filter = ctx.createBiquadFilter();
+    air.buffer = buffer; filter.type = 'bandpass'; filter.frequency.value = 460; filter.Q.value = .55;
+    air.connect(filter); filter.connect(envelope); this.track(air);
+    air.start(now); air.stop(now + duration);
+  }
   tap() { this.tone(3400, .012, .018); this.tone(210, .028, .045); this.noise(.018, .035, 1100); }
   stop() { for (const source of this.active) { try { source.stop(); } catch {} } this.active.clear(); }
 }
