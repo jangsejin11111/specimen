@@ -169,3 +169,11 @@ body:has(#completion[open]) .window > header{visibility:hidden;pointer-events:no
   #completion{max-width:calc(100vw - 32px)}
   #completion button{min-height:40px;padding:8px 16px}
 }
+
+#completion{opacity:1;transition:opacity 250ms linear}
+#completion.fading{opacity:0;pointer-events:none}
+#completion #countdown{color:#ddd;font-size:18px;margin:0 0 18px}
+#completion #countdown[hidden]{display:none}
+.ending-running .bug.waking-subtle .l1{animation:leg-settle 140ms alternate infinite!important}
+.ending-running .bug.waking .leg{animation:leg-settle 90ms var(--delay) alternate infinite!important}
+.ending-running .bug.escaping .leg{animation:leg-settle 95ms var(--delay) alternate infinite!important}

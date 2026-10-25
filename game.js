@@ -1,6 +1,6 @@
-import { isCleared, gazeDirection, EXPRESSIONS, CLEAR_HOLD_MS } from './clear-state.mjs?v=smile1';
+import { isCleared, gazeDirection, EXPRESSIONS } from './clear-state.mjs?v=smile1';
 import { mineReactionPhase } from './mine-reaction.mjs?v=feel1';
-import { EndingSequence, endingPosition, restoreEndingFaces, endingRoute } from './ending.mjs?v=wide1';
+import { EndingSequence, endingPosition, restoreEndingFaces, endingRoute, heldBlink } from './ending.mjs?v=hidden1';
 import { SIZE, BUG_COUNT } from './config.mjs?v=tray1';
 import { SpecimenState } from './game-state.mjs?v=dart1';
 import { advanceBugs } from './motion.mjs?v=speed1';
@@ -16,10 +16,11 @@ let heldView = null;
 const impactFrames = new Set();
 const state = new SpecimenState();
 const ending = new EndingSequence(BUG_COUNT);
-const AUTO_ENDING = false; // Free marking has no automatic success/failure judgment.
+
 const progress = document.getElementById("progress"), completion = document.getElementById("completion");
 let escapeView = null;
-let mineReaction=null, clearReaction=null;
+let mineReaction=null;
+const countdownText=document.getElementById("countdown");
 
 
 const endingLight = document.getElementById('ending-light');
@@ -47,6 +48,7 @@ function makeFace(hint) {
     return {x:(f.left+f.width/2-b.left)/b.width*SIZE,y:(f.top+f.height/2-b.top)/b.height*SIZE};
   });
 
+  gazeFace.element=face;
   return face;
 }
 function drawCell(index) {
@@ -74,7 +76,7 @@ function drawCell(index) {
   button.setAttribute('aria-label', `${Math.floor(index / SIZE) + 1}행 ${index % SIZE + 1}열, ${description}`);
 }
 function choose(index) {
-  if (ending.active || mineReaction || clearReaction) return;
+  if (ending.active || mineReaction) return;
   const result = state.open(index); if (!result) return;
   for(const cell of result.openedIndices)drawCell(cell);
   if(result.type==='mine')startMineReaction(index);
@@ -93,7 +95,7 @@ function dropTarget({ x, y }) {
 function highlight(index) { hoverTarget = index; }
 function grab(event, bug) {
   const previous=[...state.pinnedSpecimens].find(([,s])=>s.bug.id===bug.id)?.[0];
-  if (clearReaction || mineReaction || ending.active || event.button !== 0 || !state.grab(bug.id)) return;
+  if (mineReaction || ending.active || event.button !== 0 || !state.grab(bug.id)) return;
   event.preventDefault(); event.stopPropagation();
   if(previous!==undefined){impactFrames.delete(previous);drawCell(previous);}
   activePointer = event.pointerId; capturedNode = event.currentTarget;
@@ -118,6 +120,7 @@ function finish(event, cancelled = false) {
   const index = !cancelled && pos ? dropTarget(pos) : null;
   const pinned = state.drop(index);
   heldView = null;
+  for(const face of gazes.faces)face.element.removeAttribute('data-blink-closed');
   const pointer = activePointer, node = capturedNode;
   activePointer = null; capturedNode = null;
   if (node?.hasPointerCapture(pointer)) node.releasePointerCapture(pointer);
@@ -196,7 +199,6 @@ function drawBugs() {
 }
 function tick(now) {
   const dt = (now - lastTime) / 1000; lastTime = now;
-  if(clearReaction){if(now-clearReaction.started>=CLEAR_HOLD_MS)showCompletion("게임 완료");requestAnimationFrame(tick);return;}
   if(mineReaction){renderMineReaction(now);requestAnimationFrame(tick);return;}
   if (ending.active) { ending.advance(dt); renderEnding(); requestAnimationFrame(tick); return; }
   advanceBugs(state.roamingBugs, dt, state.random, () => sound.land(), [...state.pinnedSpecimens.values()].filter(s=>s.stage==='pinned').length);
@@ -208,8 +210,8 @@ function tick(now) {
   updateHeldGaze(dt);
   drawBugs();
   progress.textContent = `${ending.count(state)} / ${BUG_COUNT}`;
-  if(isCleared(state)) {
-    clearReaction={started:now};
+  if(isCleared(state) && ending.start(state)) {
+    impactFrames.clear();drawBugs();
     board.inert=true;document.getElementById('restart').disabled=true;
     document.body.classList.add('game-stopped');
     board.querySelectorAll('.face').forEach(face=>{face.dataset.expression=EXPRESSIONS[0];});
@@ -234,7 +236,9 @@ function renderMineReaction(now) {
   }
   if(phase==='complete')showCompletion('게임 종료');
 }
-function showCompletion(label) {
+function showCompletion(label, withCountdown=false) {
+  countdownText.hidden=!withCountdown;
+  if(withCountdown)countdownText.textContent=String(ending.countdown??8);
   if(completion.open)return;
   completion.querySelector('p').textContent=`${ending.count(state)} / ${BUG_COUNT}`;
   completion.setAttribute('aria-label',label);completion.showModal();
@@ -242,8 +246,10 @@ function showCompletion(label) {
 }
 function updateHeldGaze(dt) {
   const target=state.draggingBug;
+  const blinking=!!target && !!heldView && heldBlink(performance.now()-heldView.since);
   const mix=1-Math.exp(-Math.min(.05,Math.max(0,dt))/(target?.045:.07));
   for(const face of gazes.faces) {
+    face.element.toggleAttribute('data-blink-closed',blinking);
     const aim=target?gazeDirection(face.getOrigin(),target):face.normalDirection;
     face.currentDirection={x:face.currentDirection.x+(aim.x-face.currentDirection.x)*mix,y:face.currentDirection.y+(aim.y-face.currentDirection.y)*mix};
     face.render(face.currentDirection);
@@ -263,28 +269,37 @@ function aimEndingFaces(point) {
 }
 function renderEnding() {
   const node=bugNodes.get(ending.bug.id), phase=ending.phase, t=ending.elapsed;
-  if(phase==='still') return;
+  progress.textContent=`${BUG_COUNT} / ${BUG_COUNT}`;
+  if(phase==='smile')return;
+  if(phase==='countdown'){showCompletion('게임 완료',true);return;}
+  if(phase==='fade'){completion.classList.add('fading');return;}
+  if(completion.classList.contains('fading')){completion.close();completion.classList.remove('fading');countdownText.hidden=true;}
+  if(phase==='still')return;
+  document.body.classList.add('ending-running');
+  if(phase==='dim'){lightAt(null);return;}
   if(phase==='twitch') {
-    const r=node.getBoundingClientRect(); lightAt({x:r.left+r.width/2,y:r.top+r.height/2});
-    node.className='bug pinned'+(t<.3?' waking-subtle':t>.65?' waking':'');
+    const r=node.getBoundingClientRect();lightAt({x:r.left+r.width/2,y:r.top+r.height/2});
+    node.className='bug pinned'+(t<.25?' waking-subtle':t>.65?' waking':'');
+    // A small turn toward the label, without moving the pin or label.
+    const turn=t>.85?Math.min(1,(t-.85)/.65)*150:0;
+    const tremor=t>.65?Math.sin(t*43)*1.1:0;
+    node.style.transform=`translate(calc(-50% + ${tremor}px),-50%) rotate(${turn}deg)`;
     return;
   }
   if(!escapeView) {
-    const r=node.getBoundingClientRect(), paper=board.children[ending.index].querySelector('.paper').getBoundingClientRect();
+    const r=node.getBoundingClientRect(),paper=board.children[ending.index].querySelector('.paper').getBoundingClientRect();
     const start={x:r.left+r.width/2,y:r.top+r.height/2};
     const label={x:paper.left+paper.width/2,y:paper.bottom+3};
     const route=endingRoute(label,board.getBoundingClientRect(),innerWidth,r.width);
-    const exit=route.at(-1);
-    escapeView={start,label,exit,route,nextGazeAt:0};
-    state.pinnedSpecimens.delete(ending.index);
+    escapeView={start,label,exit:route.at(-1),route,nextGazeAt:0};
+    // Do not remove the specimen record: all eight classifications remain complete.
+    state.pinnedSpecimens.get(ending.index).bodyDeparted=true;
     ending.bug.mode='endingEscape';
-    document.body.append(node);
-    node.style.width=`${r.width}px`; node.style.position='fixed'; node.style.zIndex='20';
+    document.body.append(node);node.style.width=`${r.width}px`;node.style.position='fixed';node.style.zIndex='20';
     board.children[ending.index].setAttribute('aria-label',state.labels[ending.index].name+', 핀과 빈 자리');
   }
   if(phase==='empty'||phase==='complete') {
-    lightAt(null);
-    node.hidden=true; node.style.display='none'; ending.bug.mode='departed';
+    lightAt(null);node.hidden=true;node.style.display='none';ending.bug.mode='departed';
     restoreEndingFaces(gazes.faces,phase==='complete'?.15:t);
     if(phase==='complete')showCompletion('게임 완료');
     return;
@@ -292,16 +307,15 @@ function renderEnding() {
   const pos=endingPosition(phase,t,escapeView.start,escapeView.label,escapeView.exit,escapeView.route);
   const next=endingPosition(phase,t+.001,escapeView.start,escapeView.label,escapeView.exit,escapeView.route);
   const angle=Math.atan2(next.y-pos.y,next.x-pos.x)*180/Math.PI+90;
-  node.className='bug escaping'; node.style.left=`${pos.x}px`;node.style.top=`${pos.y}px`;
-  node.style.transform=`translate(-50%,-50%) rotate(${angle}deg)`;
-  lightAt(pos);
+  node.className='bug escaping';node.style.left=`${pos.x}px`;node.style.top=`${pos.y}px`;
+  node.style.transform=`translate(-50%,-50%) rotate(${angle}deg)`;lightAt(pos);
   const now=performance.now();
-  if(now>=escapeView.nextGazeAt) {
-    aimEndingFaces(pos); escapeView.nextGazeAt=now+100;
-  }
+  if(now>=escapeView.nextGazeAt){aimEndingFaces(pos);escapeView.nextGazeAt=now+100;}
 }
+
 function restart() {
-  mineReaction=null;clearReaction=null;document.body.classList.remove("game-stopped");
+  mineReaction=null;document.body.classList.remove("game-stopped","ending-running");
+  countdownText.hidden=true;countdownText.textContent="";completion.classList.remove("fading");
   completion.querySelector("p").textContent=`${BUG_COUNT} / ${BUG_COUNT}`;
   endingLight.className=""; endingLight.removeAttribute("style");
   finish(null,true); if(ending.bug) bugNodes.get(ending.bug.id)?.remove();

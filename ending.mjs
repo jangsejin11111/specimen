@@ -1,38 +1,36 @@
 // A separate, one-shot presentation timeline. Gameplay data is not reinterpreted.
+export const ENDING_PHASES=[['smile',2],['countdown',8],['fade',.25],['still',.75],['dim',.4],['twitch',1.5],['release',.5],['label',.7],['escape',2.7],['empty',1.65]];
 export class EndingSequence {
   constructor(total) { this.total=total; this.reset(); }
-  reset() { this.phase='playing'; this.elapsed=0; this.index=null; this.bug=null; }
+  reset() { this.phase='playing'; this.elapsed=0; this.index=null; this.bug=null; this.classificationRecord=null; }
   get active() { return this.phase!=='playing'; }
   count(state) { return this.active ? this.total : [...state.pinnedSpecimens.values()].filter(s=>s.stage==='pinned').length; }
+  get countdown() { return this.phase==='countdown'?Math.max(1,Math.ceil(8-this.elapsed)):null; }
   start(state) {
-    if(this.active || state.draggingBug || state.roamingBugs.length || this.count(state)!==this.total) return false;
-    [this.index,{bug:this.bug}]=[...state.pinnedSpecimens.entries()].at(-1);
-    this.phase='still'; this.elapsed=0; return true;
+    if(this.active || state.hitMine!==null || state.draggingBug || state.roamingBugs.length || state.pinnedSpecimens.size!==this.total || state.hiddenBugCells.size!==this.total || ![...state.hiddenBugCells].every(i=>state.pinnedSpecimens.get(i)?.stage==='pinned')) return false;
+    // Keep the completed classification independent of the escaping body's presentation.
+    this.classificationRecord=Object.freeze([...state.pinnedSpecimens.keys()]);
+    const entries=[...state.pinnedSpecimens.entries()].sort(([a],[b])=>Math.hypot(a%8-3.5,Math.floor(a/8)-3.5)-Math.hypot(b%8-3.5,Math.floor(b/8)-3.5));
+    [this.index,{bug:this.bug}]=entries[0];
+    this.phase='smile'; this.elapsed=0; return true;
   }
   advance(dt) {
     if(!this.active || this.phase==='complete') return;
-    this.elapsed+=Math.max(0,Math.min(.05,dt));
-    const phases=[['still',2],['twitch',1.3],['release',.45],['label',.65],['escape',2.5],['empty',1.15]];
-    const i=phases.findIndex(([p])=>p===this.phase);
-    if(this.elapsed>=phases[i][1]) { this.elapsed-=phases[i][1]; this.phase=phases[i+1]?.[0]||'complete'; }
+    // Countdown uses real seconds; visual scenes pause rather than skip on a hidden tab.
+    this.elapsed+=Math.max(0,this.phase==='countdown'?dt:Math.min(.05,dt));
+    const i=ENDING_PHASES.findIndex(([p])=>p===this.phase);
+    if(this.elapsed>=ENDING_PHASES[i][1]) { this.elapsed=0; this.phase=ENDING_PHASES[i+1]?.[0]||'complete'; }
   }
 }
+export function heldBlink(elapsedMs) { return elapsedMs>=3000 && elapsedMs%3000<140; }
 
 export function endingPosition(phase,t,start,label,exit,route=null) {
   const mix=(a,b,f)=>({x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f});
   const freed={x:start.x+8,y:start.y+10};
-  if(phase==='release') return mix(start,freed,Math.min(1,t/.45));
-  if(phase==='label') return mix(freed,label,Math.min(1,t/.65));
-  if(phase==='escape') return routePosition(route||[label,exit],Math.min(1,t/2.5));
+  if(phase==='release') return mix(start,freed,Math.min(1,t/.5));
+  if(phase==='label') return mix(freed,label,Math.min(1,t/.7));
+  if(phase==='escape') return routePosition(route||[label,exit],Math.min(1,t/2.7));
   return start;
-}
-
-// Uses the existing animation loop, never adds a repeating timer.
-export class RestartCountdown {
-  constructor() { this.reset(); }
-  reset() { this.deadline=null; }
-  start(now) { if(this.deadline===null)this.deadline=now+10000; }
-  remaining(now) { return this.deadline===null ? null : Math.max(0,Math.ceil((this.deadline-now)/1000)); }
 }
 
 // End temporary common tracking without changing any face's immutable hint.
