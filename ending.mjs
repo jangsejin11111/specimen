@@ -1,11 +1,11 @@
 // A separate, one-shot presentation timeline. Gameplay data is not reinterpreted.
-export const ENDING_PHASES=[['smile',2],['countdown',8],['fade',.25],['still',.75],['dim',.4],['twitch',1.5],['release',.9],['label',1.0],['escape',5.2],['empty',1.65]];
+export const ENDING_PHASES=[['smile',2],['countdown',5],['fade',.25],['still',.75],['dim',.4],['twitch',1.5],['release',.9],['label',1.0],['escape',5.2],['empty',1.65]];
 export class EndingSequence {
   constructor(total) { this.total=total; this.reset(); }
   reset() { this.phase='playing'; this.elapsed=0; this.index=null; this.bug=null; this.classificationRecord=null; }
   get active() { return this.phase!=='playing'; }
   count(state) { return this.active ? this.total : [...state.pinnedSpecimens.values()].filter(s=>s.stage==='pinned').length; }
-  get countdown() { return this.phase==='countdown'?Math.max(1,Math.ceil(8-this.elapsed)):null; }
+  get countdown() { return this.phase==='countdown'?Math.max(1,Math.ceil(5-this.elapsed)):null; }
   start(state) {
     if(this.active || state.hitMine!==null || state.draggingBug || state.roamingBugs.length || state.pinnedSpecimens.size!==this.total || state.hiddenBugCells.size!==this.total || ![...state.hiddenBugCells].every(i=>state.pinnedSpecimens.get(i)?.stage==='pinned')) return false;
     // Keep the completed classification independent of the escaping body's presentation.

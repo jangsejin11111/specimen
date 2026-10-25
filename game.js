@@ -1,6 +1,6 @@
 import { isCleared, gazeDirection, EXPRESSIONS } from './clear-state.mjs?v=smile1';
 import { mineReactionPhase } from './mine-reaction.mjs?v=wait1';
-import { EndingSequence, endingPosition, restoreEndingFaces, endingRoute, heldBlink } from './ending.mjs?v=slow2';
+import { EndingSequence, endingPosition, restoreEndingFaces, endingRoute, heldBlink } from './ending.mjs?v=count5';
 import { SIZE, BUG_COUNT } from './config.mjs?v=tray1';
 import { SpecimenState } from './game-state.mjs?v=dart1';
 import { advanceBugs } from './motion.mjs?v=speed1';
@@ -248,7 +248,7 @@ function renderMineReaction(now) {
 }
 function showCompletion(label, withCountdown=false) {
   countdownText.hidden=!withCountdown;
-  if(withCountdown)countdownText.textContent=String(ending.countdown??8);
+  if(withCountdown)countdownText.textContent=String(ending.countdown??5);
   if(completion.open)return;
   if(mineReaction) sound.playCue(() => sound.endingAmbience());
   completion.querySelector('p').textContent=`${ending.count(state)} / ${BUG_COUNT}`;
