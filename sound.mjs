@@ -44,7 +44,23 @@ export class SpecimenAudio {
   rustle() { this.noise(.12, .025, 1900); }
   friction() { this.noise(.055, .009, 2300); }
   reject() { this.tone(125, .095, .022, 'sawtooth'); this.noise(.045, .015, 550); }
-  land() { this.tone(170, .045, .04); this.noise(.025, .023, 700); }
+  land() {
+    const ctx = this.context; if (!ctx || ctx.state !== 'running') return;
+    // A short rubbery spring: quick upward flick, then a falling wobble.
+    const source = ctx.createOscillator(), gain = ctx.createGain(), now = ctx.currentTime;
+    source.type = 'sine';
+    source.frequency.setValueAtTime(260, now);
+    source.frequency.exponentialRampToValueAtTime(720, now + .035);
+    source.frequency.exponentialRampToValueAtTime(310, now + .11);
+    source.frequency.exponentialRampToValueAtTime(440, now + .16);
+    source.frequency.exponentialRampToValueAtTime(170, now + .30);
+    gain.gain.setValueAtTime(.0001, now);
+    gain.gain.exponentialRampToValueAtTime(.085, now + .008);
+    gain.gain.exponentialRampToValueAtTime(.035, now + .12);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + .32);
+    source.connect(gain); gain.connect(ctx.destination); this.track(source);
+    source.start(now); source.stop(now + .34);
+  }
   tap() { this.tone(3400, .012, .018); this.tone(210, .028, .045); this.noise(.018, .035, 1100); }
   stop() { for (const source of this.active) { try { source.stop(); } catch {} } this.active.clear(); }
 }
