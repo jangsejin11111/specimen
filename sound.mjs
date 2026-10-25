@@ -82,20 +82,26 @@ export class SpecimenAudio {
   reject() { this.tone(125, .095, .022, 'sawtooth'); this.noise(.045, .015, 550); }
   land() {
     const ctx = this.context; if (!ctx || ctx.state !== 'running') return;
-    // A short rubbery spring: quick upward flick, then a falling wobble.
-    const source = ctx.createOscillator(), gain = ctx.createGain(), now = ctx.currentTime;
-    source.type = 'sine';
-    source.frequency.setValueAtTime(260, now);
-    source.frequency.exponentialRampToValueAtTime(720, now + .035);
-    source.frequency.exponentialRampToValueAtTime(310, now + .11);
-    source.frequency.exponentialRampToValueAtTime(440, now + .16);
-    source.frequency.exponentialRampToValueAtTime(170, now + .30);
-    gain.gain.setValueAtTime(.0001, now);
-    gain.gain.exponentialRampToValueAtTime(.085, now + .008);
-    gain.gain.exponentialRampToValueAtTime(.035, now + .12);
-    gain.gain.exponentialRampToValueAtTime(.0001, now + .32);
-    source.connect(gain); gain.connect(ctx.destination); this.track(source);
-    source.start(now); source.stop(now + .34);
+    // Dry, uneven scrapes: no musical pitch bend or spring-like bounce.
+    const duration = .31, buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate);
+    const data = buffer.getChannelData(0), bursts = [[0,.025,1],[.047,.042,.7],[.112,.027,.85],[.164,.052,.55],[.238,.046,.3]];
+    let grain = 0;
+    for (let i = 0; i < data.length; i++) {
+      const t = i / ctx.sampleRate;
+      let envelope = 0;
+      for (const [start, length, strength] of bursts) {
+        const u = (t - start) / length;
+        if (u >= 0 && u < 1) envelope += strength * Math.pow(1 - u, 1.7) * Math.min(1, u * 15);
+      }
+      grain = grain * .55 + (Math.random() * 2 - 1) * .45;
+      data[i] = grain * envelope;
+    }
+    const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain();
+    source.buffer = buffer; filter.type = 'bandpass'; filter.frequency.value = 1650; filter.Q.value = .65;
+    gain.gain.value = .25;
+    source.connect(filter); filter.connect(gain); gain.connect(ctx.destination); this.track(source);
+    source.start(); source.stop(ctx.currentTime + duration + .01);
+    this.tone(95, .035, .025, 'triangle');
   }
   tap() { this.tone(3400, .012, .018); this.tone(210, .028, .045); this.noise(.018, .035, 1100); }
   stop() { for (const source of this.active) { try { source.stop(); } catch {} } this.active.clear(); }
