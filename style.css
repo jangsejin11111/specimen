@@ -97,7 +97,7 @@ header button:disabled{cursor:default;opacity:.65}
 .bug.pinned.movable{pointer-events:auto;cursor:url('tweezers.svg?v=free1') 3 25,default;touch-action:none;user-select:none}
 .bug.pinned.movable:hover{filter:drop-shadow(0 1px 1px #00000025);cursor:url('tweezers-closed.svg?v=free1') 3 25,default}
 
-.revealed-mine{position:absolute;left:calc(50% - 4px);top:calc(50% - 4px);width:8px;height:8px;border-radius:50%;background:#333a3d;box-shadow:0 0 0 3px #333a3d18}
+.revealed-mine{position:absolute;inset:0;background:#000;pointer-events:none}
 .face[data-reaction="surprised"] .eye{transform:scale(1.2);border-color:#7d8a91}
 .face[data-reaction="surprised"] .mouth{height:5px;width:5px;left:calc(50% - 2.5px);top:69%;border:1px solid #7d8a91;border-radius:50%;background:transparent}
 .face[data-reaction="closed"] .eye{transform:scaleY(.12);background:#7d8a91;border-color:#7d8a91}
