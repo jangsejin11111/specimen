@@ -5,12 +5,18 @@ import { SIZE, BUG_COUNT } from './config.mjs?v=tray1';
 import { SpecimenState } from './game-state.mjs?v=dart1';
 import { advanceBugs } from './motion.mjs?v=speed1';
 import { PIN_TIMING } from './pinning.mjs?v=tray1';
-import { SpecimenAudio } from './sound.mjs?v=feel1';
+import { SpecimenAudio } from './sound.mjs?v=mobile1';
 import { followHeld, captureScale, livingTwitch } from './capture-feel.mjs?v=tray1';
 import { makeBugArt } from './bug-art.mjs?v=tray1';
 import { CollectiveGaze } from './collective-gaze.mjs?v=surround1';
 const gazes = new CollectiveGaze();
 const sound = new SpecimenAudio();
+// Capture before drag handlers cancel/bubble-stop touch events. Keep listeners
+// after the first unlock so returning from a phone call/app switch recovers.
+for (const eventName of ['pointerdown', 'touchstart', 'touchend', 'click', 'keydown']) {
+  window.addEventListener(eventName, () => { void sound.unlock(); }, { capture: true, passive: true });
+}
+
 let nextFriction = 0;
 let heldView = null;
 const impactFrames = new Set();

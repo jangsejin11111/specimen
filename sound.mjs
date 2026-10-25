@@ -1,11 +1,23 @@
-// Quiet, dry Web Audio cues, created only after an explicit pin gesture.
+// Quiet, dry Web Audio cues, unlocked by direct user gestures.
 export class SpecimenAudio {
   constructor(factory = () => { const C = globalThis.AudioContext || globalThis.webkitAudioContext; return C ? new C() : null; }) { this.factory = factory; this.context = null; this.active = new Set(); }
   async unlock() {
     try {
-      this.context ||= this.factory();
-      if (this.context?.state === 'suspended') await this.context.resume();
-    } catch { this.context = null; }
+      // Request the media playback route where supported (not ambient audio).
+      try { if (globalThis.navigator?.audioSession) globalThis.navigator.audioSession.type = 'playback'; } catch {}
+      if (!this.context || this.context.state === 'closed') this.context = this.factory();
+      const ctx = this.context;
+      if (!ctx || ctx.state === 'running') return;
+      // Both calls must happen synchronously inside the touch/click gesture.
+      // Safari can report interrupted as well as suspended after app switching.
+      const resumed = ctx.resume();
+      const prime = ctx.createBufferSource();
+      prime.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+      prime.connect(ctx.destination);
+      this.track(prime);
+      prime.start(0);
+      await resumed;
+    } catch { /* Keep the context so the next real gesture can retry. */ }
   }
   track(source) {
     this.active.add(source);
